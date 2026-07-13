@@ -1,0 +1,19 @@
+{
+    "name": "shopwhizzy/stripecheckout",
+    "description": "ShopWhizzy Stripe checkout customizations",
+    "type": "magento2-module",
+    "license": "proprietary",
+    "require": {
+        "php": "~8.3.0||~8.4.0",
+        "magento/framework": "*",
+        "stripe/module-payments": "*"
+    },
+    "autoload": {
+        "files": [
+            "registration.php"
+        ],
+        "psr-4": {
+            "ShopWhizzy\\StripeCheckout\\": ""
+        }
+    }
+}
