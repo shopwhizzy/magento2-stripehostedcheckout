@@ -1,0 +1,19 @@
+<?xml version="1.0"?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Store:etc/config.xsd">
+    <default>
+        <stripehostedcheckout>
+            <general>
+                <enabled>0</enabled>
+            </general>
+        </stripehostedcheckout>
+        <payment>
+            <shopwhizzy_stripehostedcheckout>
+                <active>1</active>
+                <model>ShopWhizzy\StripeHostedCheckout\Model\Payment\StripeHostedCheckoutMethod</model>
+                <title>Stripe Hosted Checkout</title>
+                <allow_multiple_address>0</allow_multiple_address>
+                <group>offline</group>
+            </shopwhizzy_stripehostedcheckout>
+        </payment>
+    </default>
+</config>

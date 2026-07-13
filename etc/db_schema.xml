@@ -1,0 +1,31 @@
+<?xml version="1.0"?>
+<schema xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:noNamespaceSchemaLocation="urn:magento:framework:Setup/Declaration/Schema/etc/schema.xsd">
+    <table name="shopwhizzy_stripehostedcheckout_session" resource="default" engine="innodb"
+           comment="ShopWhizzy Stripe Hosted Checkout Session Map">
+        <column xsi:type="int" name="entity_id" unsigned="true" nullable="false" identity="true"
+                comment="Entity ID"/>
+        <column xsi:type="varchar" name="session_id" nullable="false" length="255" comment="Stripe Checkout Session ID"/>
+        <column xsi:type="int" name="quote_id" unsigned="true" nullable="false" identity="false"
+                comment="Quote ID"/>
+        <column xsi:type="smallint" name="store_id" unsigned="true" nullable="false" identity="false"
+                comment="Store ID"/>
+        <column xsi:type="varchar" name="status" nullable="false" length="32" default="pending"
+                comment="Status: pending, completed, expired, cancelled"/>
+        <column xsi:type="int" name="order_id" unsigned="true" nullable="true" identity="false"
+                comment="Order ID"/>
+        <column xsi:type="timestamp" name="created_at" on_update="false" nullable="false"
+                default="CURRENT_TIMESTAMP" comment="Created At"/>
+        <column xsi:type="timestamp" name="updated_at" on_update="true" nullable="false"
+                default="CURRENT_TIMESTAMP" comment="Updated At"/>
+        <constraint xsi:type="primary" referenceId="PRIMARY">
+            <column name="entity_id"/>
+        </constraint>
+        <constraint xsi:type="unique" referenceId="SHOPWHIZZY_STRIPEHOSTEDCHECKOUT_SESSION_SESSION_ID">
+            <column name="session_id"/>
+        </constraint>
+        <index referenceId="SHOPWHIZZY_STRIPEHOSTEDCHECKOUT_SESSION_QUOTE_ID" indexType="btree">
+            <column name="quote_id"/>
+        </index>
+    </table>
+</schema>

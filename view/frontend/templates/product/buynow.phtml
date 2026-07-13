@@ -1,0 +1,20 @@
+<?php
+/** @var \ShopWhizzy\StripeHostedCheckout\Block\Product\BuyNow $block */
+?>
+<?php if ($block->isEnabled()): ?>
+    <button type="button"
+            title="<?= $block->escapeHtmlAttr(__('Buy Now')) ?>"
+            class="action primary shopwhizzy-buy-now"
+            id="shopwhizzy-buy-now-button">
+        <span><?= $block->escapeHtml(__('Buy Now')) ?></span>
+    </button>
+    <script type="text/x-magento-init">
+    {
+        "#shopwhizzy-buy-now-button": {
+            "shopwhizzyBuyNow": {
+                "checkoutUrl": "<?= /* @noEscape */ $block->getCheckoutUrl() ?>"
+            }
+        }
+    }
+    </script>
+<?php endif; ?>

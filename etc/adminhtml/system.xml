@@ -1,0 +1,30 @@
+<?xml version="1.0"?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Config:etc/system_file.xsd">
+    <system>
+        <section id="stripehostedcheckout" translate="label" type="text" sortOrder="205" showInDefault="1" showInWebsite="1" showInStore="1">
+            <label>Stripe Hosted Checkout</label>
+            <tab>sales</tab>
+            <resource>ShopWhizzy_StripeHostedCheckout::config</resource>
+            <group id="general" translate="label" type="text" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">
+                <label>General Settings</label>
+                <field id="enabled" translate="label" type="select" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Enable Stripe Hosted Checkout Redirect</label>
+                    <comment>When enabled, checkout entry points (cart, mini-cart, direct /checkout, product "Buy Now") redirect straight to Stripe's hosted Checkout page instead of Magento's native checkout.</comment>
+                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                </field>
+                <field id="secret_key" translate="label" type="obscure" sortOrder="20" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Stripe Secret Key</label>
+                    <backend_model>Magento\Config\Model\Config\Backend\Encrypted</backend_model>
+                </field>
+                <field id="publishable_key" translate="label" type="text" sortOrder="30" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Stripe Publishable Key</label>
+                </field>
+                <field id="webhook_secret" translate="label" type="obscure" sortOrder="40" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Webhook Signing Secret</label>
+                    <comment>From the Stripe Dashboard webhook endpoint configured to point at .../shopwhizzystripehostedcheckout/webhook/index</comment>
+                    <backend_model>Magento\Config\Model\Config\Backend\Encrypted</backend_model>
+                </field>
+            </group>
+        </section>
+    </system>
+</config>
