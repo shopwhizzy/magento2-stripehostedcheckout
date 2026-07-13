@@ -3,6 +3,7 @@
 namespace ShopWhizzy\StripeHostedCheckout\Helper;
 
 use Magento\Framework\App\Config\ScopeConfigInterface;
+use Magento\Framework\Encryption\EncryptorInterface;
 use Magento\Store\Model\ScopeInterface;
 use Stripe\StripeClient;
 
@@ -16,7 +17,8 @@ class Config
     private ?StripeClient $stripeClient = null;
 
     public function __construct(
-        private readonly ScopeConfigInterface $scopeConfig
+        private readonly ScopeConfigInterface $scopeConfig,
+        private readonly EncryptorInterface $encryptor
     ) {
     }
 
@@ -31,11 +33,13 @@ class Config
 
     public function getSecretKey(?int $storeId = null): ?string
     {
-        return $this->scopeConfig->getValue(
+        $value = $this->scopeConfig->getValue(
             self::XML_PATH_SECRET_KEY,
             ScopeInterface::SCOPE_STORE,
             $storeId
         );
+
+        return $value ? $this->encryptor->decrypt($value) : null;
     }
 
     public function getPublishableKey(?int $storeId = null): ?string
@@ -49,11 +53,13 @@ class Config
 
     public function getWebhookSecret(?int $storeId = null): ?string
     {
-        return $this->scopeConfig->getValue(
+        $value = $this->scopeConfig->getValue(
             self::XML_PATH_WEBHOOK_SECRET,
             ScopeInterface::SCOPE_STORE,
             $storeId
         );
+
+        return $value ? $this->encryptor->decrypt($value) : null;
     }
 
     public function getStripeClient(?int $storeId = null): StripeClient

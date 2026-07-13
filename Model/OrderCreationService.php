@@ -2,7 +2,9 @@
 
 namespace ShopWhizzy\StripeHostedCheckout\Model;
 
+use Magento\Directory\Helper\Data as DirectoryHelper;
 use Magento\Directory\Model\RegionFactory;
+use Magento\Directory\Model\ResourceModel\Region\CollectionFactory as RegionCollectionFactory;
 use Magento\Framework\DB\TransactionFactory;
 use Magento\Quote\Api\CartManagementInterface;
 use Magento\Quote\Api\CartRepositoryInterface;
@@ -32,6 +34,8 @@ class OrderCreationService
         private readonly InvoiceService $invoiceService,
         private readonly TransactionFactory $transactionFactory,
         private readonly RegionFactory $regionFactory,
+        private readonly RegionCollectionFactory $regionCollectionFactory,
+        private readonly DirectoryHelper $directoryHelper,
         private readonly LoggerInterface $logger
     ) {
     }
@@ -84,15 +88,28 @@ class OrderCreationService
         $phone = $customerDetails->phone ?? null;
 
         $quote->setCustomerEmail($email);
+        $regionWasGuessed = false;
 
         if ($shippingDetails) {
             $shippingAddress = $quote->getShippingAddress();
-            $this->applyAddressData($shippingAddress, $shippingDetails->name ?? '', $shippingDetails->address, $email, $phone);
+            $regionWasGuessed = $this->applyAddressData(
+                $shippingAddress,
+                $shippingDetails->name ?? '',
+                $shippingDetails->address,
+                $email,
+                $phone
+            ) || $regionWasGuessed;
 
             $billingAddress = $quote->getBillingAddress();
             $billingSource = $customerDetails->address ?? $shippingDetails->address;
             $billingName = $customerDetails->name ?? ($shippingDetails->name ?? '');
-            $this->applyAddressData($billingAddress, $billingName, $billingSource, $email, $phone);
+            $regionWasGuessed = $this->applyAddressData(
+                $billingAddress,
+                $billingName,
+                $billingSource,
+                $email,
+                $phone
+            ) || $regionWasGuessed;
 
             [$carrierCode, $methodCode] = $this->resolveShippingMethod($stripeSession);
             $shippingAddress->setCollectShippingRates(true);
@@ -120,26 +137,40 @@ class OrderCreationService
 
         $order->setState(SalesOrder::STATE_PROCESSING);
         $order->setStatus(SalesOrder::STATE_PROCESSING);
-        $order->addCommentToStatusHistory(
-            'Paid via Stripe Hosted Checkout. Payment Intent: ' . $paymentIntentId
-        );
+        $comment = 'Paid via Stripe Hosted Checkout. Payment Intent: ' . $paymentIntentId;
+        if ($regionWasGuessed) {
+            $comment .= ' NOTE: Stripe did not collect a state/region for this address\'s country;'
+                . ' a placeholder region was assigned so the order could be placed. Please verify the'
+                . ' address with the customer before shipping.';
+        }
+        $order->addCommentToStatusHistory($comment);
         $this->orderRepository->save($order);
 
         return $order;
     }
 
+    /**
+     * Applies Stripe's collected address onto a quote address.
+     *
+     * @return bool true if Magento requires a region for this country but Stripe didn't
+     *              collect one (not all countries get a state field on Stripe's hosted
+     *              page), meaning a placeholder region had to be guessed to satisfy
+     *              Magento's own address validation.
+     */
     private function applyAddressData(
         \Magento\Quote\Model\Quote\Address $address,
         string $fullName,
         object $stripeAddress,
         string $email,
         ?string $phone = null
-    ): void {
+    ): bool {
         [$firstName, $lastName] = $this->splitName($fullName);
 
         $countryId = $stripeAddress->country ?? '';
         $regionId = null;
         $regionText = $stripeAddress->state ?? '';
+        $regionWasGuessed = false;
+
         if ($countryId && $regionText) {
             $region = $this->regionFactory->create()->loadByCode($regionText, $countryId);
             if (!$region->getId()) {
@@ -148,6 +179,18 @@ class OrderCreationService
             if ($region->getId()) {
                 $regionId = $region->getId();
                 $regionText = $region->getName();
+            }
+        }
+
+        if (!$regionId && $countryId && $this->directoryHelper->isRegionRequired($countryId)) {
+            $fallbackRegion = $this->regionCollectionFactory->create()
+                ->addCountryFilter($countryId)
+                ->setPageSize(1)
+                ->getFirstItem();
+            if ($fallbackRegion->getId()) {
+                $regionId = $fallbackRegion->getId();
+                $regionText = $fallbackRegion->getName();
+                $regionWasGuessed = true;
             }
         }
 
@@ -163,6 +206,8 @@ class OrderCreationService
         $address->setPostcode($stripeAddress->postal_code ?? '');
         $address->setCountryId($countryId);
         $address->setTelephone($phone ?: 'N/A');
+
+        return $regionWasGuessed;
     }
 
     private function splitName(string $fullName): array
