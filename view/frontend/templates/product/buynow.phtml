@@ -5,16 +5,8 @@
     <button type="button"
             title="<?= $block->escapeHtmlAttr(__('Buy Now')) ?>"
             class="action primary shopwhizzy-buy-now"
-            id="shopwhizzy-buy-now-button">
+            data-checkout-url="<?= $block->escapeUrl($block->getCheckoutUrl()) ?>">
         <span><?= $block->escapeHtml(__('Buy Now')) ?></span>
     </button>
-    <script type="text/x-magento-init">
-    {
-        "#shopwhizzy-buy-now-button": {
-            "shopwhizzyBuyNow": {
-                "checkoutUrl": "<?= /* @noEscape */ $block->getCheckoutUrl() ?>"
-            }
-        }
-    }
-    </script>
+    <script src="<?= $block->escapeUrl($block->getViewFileUrl('ShopWhizzy_StripeHostedCheckout/js/buy-now.js')) ?>" defer></script>
 <?php endif; ?>

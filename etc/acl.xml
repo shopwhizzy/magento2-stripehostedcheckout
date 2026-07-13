@@ -3,12 +3,8 @@
     <acl>
         <resources>
             <resource id="Magento_Backend::admin">
-                <resource id="Magento_Backend::stores">
-                    <resource id="Magento_Backend::stores_settings">
-                        <resource id="Magento_Config::config">
-                            <resource id="ShopWhizzy_StripeHostedCheckout::config" title="Stripe Hosted Checkout Section"/>
-                        </resource>
-                    </resource>
+                <resource id="ShopWhizzy_Base::core" title="ShopWhizzy" sortOrder="61">
+                    <resource id="ShopWhizzy_StripeHostedCheckout::config" title="Stripe Hosted Checkout Section"/>
                 </resource>
             </resource>
         </resources>

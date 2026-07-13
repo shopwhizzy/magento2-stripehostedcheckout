@@ -1,9 +1,12 @@
 <?xml version="1.0"?>
 <config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Config:etc/system_file.xsd">
     <system>
-        <section id="stripehostedcheckout" translate="label" type="text" sortOrder="205" showInDefault="1" showInWebsite="1" showInStore="1">
+        <tab id="shopwhizzy" translate="label" sortOrder="61" class="shopwhizzy_tab">
+            <label>ShopWhizzy</label>
+        </tab>
+        <section id="stripehostedcheckout" translate="label" type="text" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">
             <label>Stripe Hosted Checkout</label>
-            <tab>sales</tab>
+            <tab>shopwhizzy</tab>
             <resource>ShopWhizzy_StripeHostedCheckout::config</resource>
             <group id="general" translate="label" type="text" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">
                 <label>General Settings</label>
@@ -18,6 +21,11 @@
                 </field>
                 <field id="publishable_key" translate="label" type="text" sortOrder="30" showInDefault="1" showInWebsite="1" showInStore="1">
                     <label>Stripe Publishable Key</label>
+                </field>
+                <field id="generate_webhook_button" translate="label" sortOrder="35" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Generate Webhook</label>
+                    <comment>Creates a webhook endpoint in Stripe using the Secret Key entered above (even if not saved yet) and fills in the field below. Click "Save Config" afterward to persist it.</comment>
+                    <frontend_model>ShopWhizzy\StripeHostedCheckout\Block\Adminhtml\System\Config\GenerateWebhookButton</frontend_model>
                 </field>
                 <field id="webhook_secret" translate="label" type="obscure" sortOrder="40" showInDefault="1" showInWebsite="1" showInStore="1">
                     <label>Webhook Signing Secret</label>

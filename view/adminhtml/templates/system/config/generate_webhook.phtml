@@ -1,0 +1,17 @@
+<?php
+/** @var \ShopWhizzy\StripeHostedCheckout\Block\Adminhtml\System\Config\GenerateWebhookButton $block */
+?>
+<button type="button"
+        class="action-default scalable"
+        id="shopwhizzy-generate-webhook-button"
+        data-ajax-url="<?= $block->escapeUrl($block->getAjaxUrl()) ?>"
+        data-secret-key-field="stripehostedcheckout_general_secret_key"
+        data-webhook-secret-field="stripehostedcheckout_general_webhook_secret">
+    <span><?= $block->escapeHtml(__('Generate Webhook')) ?></span>
+</button>
+<div id="shopwhizzy-generate-webhook-result" style="display:none;margin-top:8px;padding:6px 10px;border-radius:3px;"></div>
+<style>
+    #shopwhizzy-generate-webhook-result.shopwhizzy-success { background:#e5efe0; color:#1a641a; border:1px solid #90ee90; }
+    #shopwhizzy-generate-webhook-result.shopwhizzy-error { background:#fae5e5; color:#b30000; border:1px solid #f5b3b3; }
+</style>
+<script src="<?= $block->escapeUrl($block->getViewFileUrl('ShopWhizzy_StripeHostedCheckout/js/generate-webhook.js')) ?>" defer></script>
