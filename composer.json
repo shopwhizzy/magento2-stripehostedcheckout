@@ -1,6 +1,6 @@
 {
-    "name": "shopwhizzy/stripecheckout",
-    "description": "ShopWhizzy Stripe checkout customizations",
+    "name": "shopwhizzy/stripehostedcheckout",
+    "description": "ShopWhizzy Stripe Hosted Checkout redirect integration",
     "type": "magento2-module",
     "license": "proprietary",
     "require": {
@@ -13,7 +13,7 @@
             "registration.php"
         ],
         "psr-4": {
-            "ShopWhizzy\\StripeCheckout\\": ""
+            "ShopWhizzy\\StripeHostedCheckout\\": ""
         }
     }
 }

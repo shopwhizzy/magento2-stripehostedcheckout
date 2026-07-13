@@ -2,4 +2,4 @@
 
 use Magento\Framework\Component\ComponentRegistrar;
 
-ComponentRegistrar::register(ComponentRegistrar::MODULE, 'ShopWhizzy_StripeCheckout', __DIR__);
+ComponentRegistrar::register(ComponentRegistrar::MODULE, 'ShopWhizzy_StripeHostedCheckout', __DIR__);
