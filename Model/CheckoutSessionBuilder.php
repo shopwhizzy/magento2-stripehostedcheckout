@@ -107,9 +107,10 @@ class CheckoutSessionBuilder
             }
 
             if (!empty($rates)) {
+                $selectedMethod = $shippingAddress->getShippingMethod();
                 $options = [];
                 foreach ($rates as $rate) {
-                    $options[] = [
+                    $option = [
                         'shipping_rate_data' => [
                             'type' => 'fixed_amount',
                             'fixed_amount' => [
@@ -123,6 +124,15 @@ class CheckoutSessionBuilder
                             ],
                         ],
                     ];
+
+                    // Stripe pre-selects whichever option is first in the array, so the method
+                    // already chosen in Magento (e.g. via the cart's shipping estimator) must be
+                    // moved to the front - otherwise Stripe silently defaults to a different one.
+                    if ($selectedMethod && $rate->getCarrierCode() . '_' . $rate->getMethodCode() === $selectedMethod) {
+                        array_unshift($options, $option);
+                    } else {
+                        $options[] = $option;
+                    }
                 }
 
                 return $options;
