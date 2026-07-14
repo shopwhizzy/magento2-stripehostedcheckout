@@ -30,6 +30,13 @@ The payment method used (e.g. "Visa •••• 4242", "Multibanco", "PayPal") 
 its own column in **Sales > Orders**, and the order view's Payment Information panel
 includes the Payment Intent ID with a direct link to view it in the Stripe Dashboard.
 
+## Demo
+
+[Demo Product](https://app-83914d.shopwhizzyapps.com/demo-product.html) — click
+**Buy Now** to see the redirect straight into Stripe's hosted Checkout page. The same
+redirect happens from the cart page and mini-cart "Proceed to Checkout" buttons once
+enabled.
+
 ## Requirements
 
 - Magento 2.4.9, PHP 8.3+
