@@ -40,6 +40,18 @@ class OrderCreationService
     ) {
     }
 
+    /**
+     * Creates (or, on repeat calls, reconciles) the Magento order for a Checkout Session.
+     *
+     * Gating on session `status` (not `payment_status`) matters: for delayed/voucher
+     * payment methods (Multibanco, MB WAY, OXXO, bank transfers, ...) the customer has
+     * completed checkout and received their payment reference, but the money hasn't
+     * cleared yet - `status` is already 'complete' while `payment_status` stays 'unpaid'
+     * until a later async_payment_succeeded event arrives, sometimes hours or days later.
+     * Waiting for 'paid' here (as this used to) meant those customers got no order and no
+     * redirect at all. stripe/module-payments' own return controller has the same check
+     * (`if ($session->status == "complete")`), confirming this is the correct signal.
+     */
     public function createFromSession(StripeCheckoutSession $stripeSession): ?OrderInterface
     {
         $mapping = $this->sessionFactory->create();
@@ -51,13 +63,19 @@ class OrderCreationService
 
         if ($mapping->getStatus() === Session::STATUS_COMPLETED && $mapping->getOrderId()) {
             try {
-                return $this->orderRepository->get($mapping->getOrderId());
+                $order = $this->orderRepository->get($mapping->getOrderId());
             } catch (\Exception $e) {
                 return null;
             }
+
+            if ($stripeSession->payment_status === 'paid') {
+                $this->ensureInvoiced($order, $stripeSession);
+            }
+
+            return $order;
         }
 
-        if ($stripeSession->payment_status !== 'paid') {
+        if ($stripeSession->status !== 'complete') {
             return null;
         }
 
@@ -76,6 +94,55 @@ class OrderCreationService
         $this->sessionResource->save($mapping);
 
         return $order;
+    }
+
+    /**
+     * Called for checkout.session.async_payment_failed: the voucher expired or the
+     * delayed payment failed after the order was already placed in a pending state.
+     */
+    public function cancelFromFailedAsyncPayment(StripeCheckoutSession $stripeSession): void
+    {
+        $mapping = $this->sessionFactory->create();
+        $this->sessionResource->loadBySessionId($mapping, $stripeSession->id);
+
+        if (!$mapping->getId() || !$mapping->getOrderId()) {
+            return;
+        }
+
+        try {
+            $order = $this->orderRepository->get($mapping->getOrderId());
+        } catch (\Exception $e) {
+            return;
+        }
+
+        if ($order->canCancel()) {
+            $order->cancel();
+            $order->addCommentToStatusHistory(
+                'Stripe async payment (e.g. Multibanco/MB WAY voucher) failed or expired. Order cancelled.'
+            );
+            $this->orderRepository->save($order);
+        }
+    }
+
+    /**
+     * Invoices a pending order once a delayed payment method's payment actually clears.
+     */
+    private function ensureInvoiced(OrderInterface $order, StripeCheckoutSession $stripeSession): void
+    {
+        if ($order->hasInvoices()) {
+            return;
+        }
+
+        $paymentIntentId = $this->resolvePaymentIntentId($stripeSession);
+
+        $this->invoiceOrder($order, $paymentIntentId);
+
+        $order->setState(SalesOrder::STATE_PROCESSING);
+        $order->setStatus(SalesOrder::STATE_PROCESSING);
+        $order->addCommentToStatusHistory(
+            'Stripe async payment confirmed. Payment Intent: ' . $paymentIntentId
+        );
+        $this->orderRepository->save($order);
     }
 
     private function buildOrder(StripeCheckoutSession $stripeSession, int $quoteId): OrderInterface
@@ -125,19 +192,28 @@ class OrderCreationService
         $orderId = $this->cartManagement->placeOrder($quote->getId());
         $order = $this->orderRepository->get($orderId);
 
-        $paymentIntentId = is_string($stripeSession->payment_intent)
-            ? $stripeSession->payment_intent
-            : ($stripeSession->payment_intent->id ?? $stripeSession->id);
+        $paymentIntentId = $this->resolvePaymentIntentId($stripeSession);
 
         $payment = $order->getPayment();
         $payment->setLastTransId($paymentIntentId);
         $payment->setTransactionId($paymentIntentId);
 
-        $this->invoiceOrder($order, $paymentIntentId);
+        if ($stripeSession->payment_status === 'paid') {
+            $this->invoiceOrder($order, $paymentIntentId);
+            $order->setState(SalesOrder::STATE_PROCESSING);
+            $order->setStatus(SalesOrder::STATE_PROCESSING);
+            $comment = 'Paid via Stripe Hosted Checkout. Payment Intent: ' . $paymentIntentId;
+        } else {
+            // Delayed payment method (Multibanco, MB WAY, OXXO, bank transfer, ...): the
+            // customer has their voucher/reference but hasn't paid yet. Order is placed now
+            // (Magento's default new/pending state - not invoiced) so nothing is lost if they
+            // never come back to the site; ensureInvoiced() finishes the job once
+            // checkout.session.async_payment_succeeded confirms the money actually arrived.
+            $comment = 'Order placed via Stripe Hosted Checkout using a delayed payment method '
+                . '(e.g. Multibanco/MB WAY). Awaiting payment confirmation - do not ship until invoiced. '
+                . 'Payment Intent: ' . $paymentIntentId;
+        }
 
-        $order->setState(SalesOrder::STATE_PROCESSING);
-        $order->setStatus(SalesOrder::STATE_PROCESSING);
-        $comment = 'Paid via Stripe Hosted Checkout. Payment Intent: ' . $paymentIntentId;
         if ($regionWasGuessed) {
             $comment .= ' NOTE: Stripe did not collect a state/region for this address\'s country;'
                 . ' a placeholder region was assigned so the order could be placed. Please verify the'
@@ -147,6 +223,13 @@ class OrderCreationService
         $this->orderRepository->save($order);
 
         return $order;
+    }
+
+    private function resolvePaymentIntentId(StripeCheckoutSession $stripeSession): string
+    {
+        return is_string($stripeSession->payment_intent)
+            ? $stripeSession->payment_intent
+            : ($stripeSession->payment_intent->id ?? $stripeSession->id);
     }
 
     /**

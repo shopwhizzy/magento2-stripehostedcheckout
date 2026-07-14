@@ -21,8 +21,11 @@ use Stripe\Webhook;
  * Dedicated webhook endpoint for this module, separate from stripe/module-payments' own
  * /stripe/webhooks endpoint, so processing our sessions never interferes with the base
  * module's own event handling. Configure this URL + a matching signing secret as its own
- * webhook endpoint in the Stripe Dashboard, subscribed to checkout.session.completed and
- * checkout.session.expired.
+ * webhook endpoint in the Stripe Dashboard, subscribed to checkout.session.completed,
+ * checkout.session.expired, checkout.session.async_payment_succeeded, and
+ * checkout.session.async_payment_failed (the last two matter for delayed/voucher payment
+ * methods like Multibanco and MB WAY, where the customer completes checkout before the
+ * payment itself actually clears).
  */
 class Index implements CsrfAwareActionInterface
 {
@@ -64,18 +67,29 @@ class Index implements CsrfAwareActionInterface
             return $this->response;
         }
 
-        if ($event->type === 'checkout.session.completed') {
-            $fullSession = $this->config->getStripeClient()->checkout->sessions->retrieve($stripeSession->id, [
-                'expand' => ['payment_intent', 'shipping_cost.shipping_rate'],
-            ]);
-            $this->orderCreationService->createFromSession($fullSession);
-        } elseif ($event->type === 'checkout.session.expired') {
-            $this->markExpired($stripeSession->id);
+        switch ($event->type) {
+            case 'checkout.session.completed':
+            case 'checkout.session.async_payment_succeeded':
+                $this->orderCreationService->createFromSession($this->retrieveFullSession($stripeSession->id));
+                break;
+            case 'checkout.session.async_payment_failed':
+                $this->orderCreationService->cancelFromFailedAsyncPayment($this->retrieveFullSession($stripeSession->id));
+                break;
+            case 'checkout.session.expired':
+                $this->markExpired($stripeSession->id);
+                break;
         }
 
         $this->response->setHttpResponseCode(200);
 
         return $this->response;
+    }
+
+    private function retrieveFullSession(string $sessionId): \Stripe\Checkout\Session
+    {
+        return $this->config->getStripeClient()->checkout->sessions->retrieve($sessionId, [
+            'expand' => ['payment_intent', 'shipping_cost.shipping_rate'],
+        ]);
     }
 
     private function markExpired(string $sessionId): void
