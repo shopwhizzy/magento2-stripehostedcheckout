@@ -34,24 +34,13 @@ the other is a no-op.
 
 ## Installation
 
-This module lives in `app/code/ShopWhizzy/StripeHostedCheckout` and is also wired up
-as a Composer path-repository package (`shopwhizzy/stripehostedcheckout`), so it
-installs like any other package while the real source stays in `app/code` for
-development:
-
 ```bash
-composer config repositories.shopwhizzy-stripehostedcheckout path app/code/ShopWhizzy/StripeHostedCheckout
-composer require shopwhizzy/stripehostedcheckout:@dev
+composer require shopwhizzy/stripehostedcheckout
 bin/magento module:enable ShopWhizzy_StripeHostedCheckout
 bin/magento setup:upgrade
 bin/magento setup:di:compile
 bin/magento cache:flush
 ```
-
-If you're pulling this module from its own Git/Packagist repository into a fresh
-install instead of developing in `app/code`, just `composer require
-shopwhizzy/stripehostedcheckout` per your normal repository configuration and run
-the same `setup:upgrade` / `setup:di:compile` / `cache:flush` steps.
 
 ## Setup
 
