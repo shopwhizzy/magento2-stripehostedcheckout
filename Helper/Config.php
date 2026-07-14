@@ -70,4 +70,9 @@ class Config
 
         return $this->stripeClient;
     }
+
+    public function isTestMode(?int $storeId = null): bool
+    {
+        return str_starts_with((string) $this->getSecretKey($storeId), 'sk_test_');
+    }
 }

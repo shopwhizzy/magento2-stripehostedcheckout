@@ -40,7 +40,7 @@ class Success extends Action implements HttpGetActionInterface
 
         try {
             $stripeSession = $this->config->getStripeClient()->checkout->sessions->retrieve($sessionId, [
-                'expand' => ['payment_intent', 'shipping_cost.shipping_rate'],
+                'expand' => ['payment_intent.payment_method', 'shipping_cost.shipping_rate'],
             ]);
         } catch (\Exception $e) {
             $this->logger->error(

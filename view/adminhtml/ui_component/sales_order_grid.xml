@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<listing xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Ui:etc/ui_configuration.xsd">
+    <columns name="sales_order_columns">
+        <column name="stripehostedcheckout_payment_method">
+            <settings>
+                <filter>text</filter>
+                <label translate="true">Stripe Payment Method</label>
+                <sortOrder>100</sortOrder>
+                <visible>true</visible>
+            </settings>
+        </column>
+    </columns>
+</listing>

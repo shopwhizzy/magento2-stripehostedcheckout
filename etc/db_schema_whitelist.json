@@ -1,0 +1,31 @@
+{
+    "shopwhizzy_stripehostedcheckout_session": {
+        "column": {
+            "entity_id": true,
+            "session_id": true,
+            "quote_id": true,
+            "store_id": true,
+            "status": true,
+            "order_id": true,
+            "created_at": true,
+            "updated_at": true
+        },
+        "index": {
+            "SHOPWHIZZY_STRIPEHOSTEDCHECKOUT_SESSION_QUOTE_ID": true
+        },
+        "constraint": {
+            "PRIMARY": true,
+            "SHOPWHIZZY_STRIPEHOSTEDCHECKOUT_SESSION_SESSION_ID": true
+        }
+    },
+    "sales_order": {
+        "column": {
+            "stripehostedcheckout_payment_method": true
+        }
+    },
+    "sales_order_grid": {
+        "column": {
+            "stripehostedcheckout_payment_method": true
+        }
+    }
+}

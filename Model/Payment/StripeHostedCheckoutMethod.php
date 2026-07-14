@@ -17,6 +17,8 @@ class StripeHostedCheckoutMethod extends AbstractMethod
 
     protected $_code = self::CODE;
 
+    protected $_infoBlockType = \ShopWhizzy\StripeHostedCheckout\Block\Adminhtml\PaymentInfo::class;
+
     protected $_isOffline = true;
 
     protected $_canUseCheckout = false;

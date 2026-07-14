@@ -1,0 +1,23 @@
+<?php
+/** @var \ShopWhizzy\StripeHostedCheckout\Block\Adminhtml\PaymentInfo $block */
+$dashboardUrl = $block->getDashboardUrl();
+?>
+<table class="admin__table-secondary">
+    <tr>
+        <th><?= $block->escapeHtml(__('Payment Method')) ?></th>
+        <td><?= $block->escapeHtml($block->getPaymentMethodLabel()) ?></td>
+    </tr>
+    <?php if ($block->getPaymentIntentId()): ?>
+    <tr>
+        <th><?= $block->escapeHtml(__('Payment Intent')) ?></th>
+        <td>
+            <?= $block->escapeHtml($block->getPaymentIntentId()) ?>
+            <?php if ($dashboardUrl): ?>
+                &nbsp;<a href="<?= $block->escapeUrl($dashboardUrl) ?>" target="_blank" rel="noopener noreferrer">
+                    <?= $block->escapeHtml(__('View in Stripe')) ?>
+                </a>
+            <?php endif; ?>
+        </td>
+    </tr>
+    <?php endif; ?>
+</table>

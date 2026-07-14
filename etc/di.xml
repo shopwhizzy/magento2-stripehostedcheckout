@@ -1,0 +1,16 @@
+<?xml version="1.0"?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:framework:ObjectManager/etc/config.xsd">
+    <!--
+        Magento\Sales\Model\ResourceModel\Grid builds its sales_order -> sales_order_grid
+        sync SELECT from this explicit "columns" argument, not by auto-discovering matching
+        column names - adding the column via db_schema.xml alone is not enough to get it
+        copied into the grid. Same pattern stripe/module-payments itself uses.
+    -->
+    <virtualType name="Magento\Sales\Model\ResourceModel\Order\Grid">
+        <arguments>
+            <argument name="columns" xsi:type="array">
+                <item name="stripehostedcheckout_payment_method" xsi:type="string">sales_order.stripehostedcheckout_payment_method</item>
+            </argument>
+        </arguments>
+    </virtualType>
+</config>

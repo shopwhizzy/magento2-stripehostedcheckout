@@ -26,6 +26,10 @@ Order creation is triggered by a dedicated Stripe webhook (authoritative) and, a
 UX convenience, by the browser's return from Stripe — whichever happens first wins;
 the other is a no-op.
 
+The payment method used (e.g. "Visa •••• 4242", "Multibanco", "PayPal") is shown as
+its own column in **Sales > Orders**, and the order view's Payment Information panel
+includes the Payment Intent ID with a direct link to view it in the Stripe Dashboard.
+
 ## Requirements
 
 - Magento 2.4.9, PHP 8.3+

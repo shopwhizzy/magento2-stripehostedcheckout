@@ -193,10 +193,18 @@ class OrderCreationService
         $order = $this->orderRepository->get($orderId);
 
         $paymentIntentId = $this->resolvePaymentIntentId($stripeSession);
+        $paymentMethodSummary = $this->extractPaymentMethodSummary($stripeSession);
 
         $payment = $order->getPayment();
         $payment->setLastTransId($paymentIntentId);
         $payment->setTransactionId($paymentIntentId);
+        $payment->setAdditionalInformation('stripe_payment_intent_id', $paymentIntentId);
+        $payment->setAdditionalInformation('stripe_payment_method_type', $paymentMethodSummary['type']);
+        $payment->setAdditionalInformation('stripe_payment_method_label', $paymentMethodSummary['label']);
+
+        // Also copied to sales_order_grid by Magento's own grid-sync, so it's visible on
+        // Sales > Orders without opening each order (see etc/db_schema.xml).
+        $order->setData('stripehostedcheckout_payment_method', $paymentMethodSummary['label']);
 
         if ($stripeSession->payment_status === 'paid') {
             $this->invoiceOrder($order, $paymentIntentId);
@@ -230,6 +238,49 @@ class OrderCreationService
         return is_string($stripeSession->payment_intent)
             ? $stripeSession->payment_intent
             : ($stripeSession->payment_intent->id ?? $stripeSession->id);
+    }
+
+    /**
+     * Human-readable label for the payment method used, e.g. "Visa •••• 4242" or
+     * "Multibanco". Requires the session to have been retrieved with
+     * `payment_intent.payment_method` expanded - falls back to a generic label
+     * otherwise rather than making an extra API call here.
+     */
+    private function extractPaymentMethodSummary(StripeCheckoutSession $stripeSession): array
+    {
+        $paymentMethod = is_object($stripeSession->payment_intent)
+            ? ($stripeSession->payment_intent->payment_method ?? null)
+            : null;
+
+        if (!$paymentMethod || is_string($paymentMethod)) {
+            return ['type' => 'unknown', 'label' => 'Stripe'];
+        }
+
+        $type = $paymentMethod->type ?? 'unknown';
+
+        if ($type === 'card' && !empty($paymentMethod->card)) {
+            $brand = ucfirst((string) $paymentMethod->card->brand);
+            $last4 = (string) $paymentMethod->card->last4;
+
+            return ['type' => $type, 'label' => trim($brand . ' •••• ' . $last4)];
+        }
+
+        return ['type' => $type, 'label' => $this->humanizePaymentMethodType($type)];
+    }
+
+    private function humanizePaymentMethodType(string $type): string
+    {
+        $knownLabels = [
+            'mb_way' => 'MB WAY',
+            'multibanco' => 'Multibanco',
+            'sepa_debit' => 'SEPA Direct Debit',
+            'us_bank_account' => 'US Bank Account',
+            'ideal' => 'iDEAL',
+            'eps' => 'EPS',
+            'paypal' => 'PayPal',
+        ];
+
+        return $knownLabels[$type] ?? ucwords(str_replace('_', ' ', $type));
     }
 
     /**

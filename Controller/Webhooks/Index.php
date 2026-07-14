@@ -98,7 +98,7 @@ class Index implements CsrfAwareActionInterface, HttpGetActionInterface, HttpPos
     private function retrieveFullSession(string $sessionId): \Stripe\Checkout\Session
     {
         return $this->config->getStripeClient()->checkout->sessions->retrieve($sessionId, [
-            'expand' => ['payment_intent', 'shipping_cost.shipping_rate'],
+            'expand' => ['payment_intent.payment_method', 'shipping_cost.shipping_rate'],
         ]);
     }
 
