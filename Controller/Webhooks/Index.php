@@ -1,13 +1,13 @@
 <?php
 
-namespace ShopWhizzy\StripeHostedCheckout\Controller\Webhook;
+namespace ShopWhizzy\StripeHostedCheckout\Controller\Webhooks;
 
 use Magento\Framework\App\Action\Context;
+use Magento\Framework\App\Action\HttpGetActionInterface;
+use Magento\Framework\App\Action\HttpPostActionInterface;
 use Magento\Framework\App\CsrfAwareActionInterface;
 use Magento\Framework\App\Request\InvalidRequestException;
 use Magento\Framework\App\RequestInterface;
-use Magento\Framework\App\ResponseInterface;
-use Magento\Framework\Controller\ResultFactory;
 use Psr\Log\LoggerInterface;
 use ShopWhizzy\StripeHostedCheckout\Helper\Config;
 use ShopWhizzy\StripeHostedCheckout\Model\OrderCreationService;
@@ -27,7 +27,7 @@ use Stripe\Webhook;
  * methods like Multibanco and MB WAY, where the customer completes checkout before the
  * payment itself actually clears).
  */
-class Index implements CsrfAwareActionInterface
+class Index implements CsrfAwareActionInterface, HttpGetActionInterface, HttpPostActionInterface
 {
     private $response;
     private $request;
@@ -46,6 +46,13 @@ class Index implements CsrfAwareActionInterface
 
     public function execute()
     {
+        // A plain GET (someone checking the URL resolves, or Stripe Dashboard's own
+        // reachability check) has no signature/body to verify - mirrors
+        // stripe/module-payments' own webhook controller's behavior for the same case.
+        if ($this->request->getMethod() === 'GET') {
+            return $this->respond(200, 'Your webhooks endpoint is accessible from your location.');
+        }
+
         $payload = $this->request->getContent();
         $signatureHeader = $this->request->getHeader('Stripe-Signature');
         $webhookSecret = $this->config->getWebhookSecret();
@@ -54,17 +61,14 @@ class Index implements CsrfAwareActionInterface
             $event = Webhook::constructEvent($payload, $signatureHeader, $webhookSecret);
         } catch (\UnexpectedValueException | SignatureVerificationException $e) {
             $this->logger->error('ShopWhizzy_StripeHostedCheckout: invalid webhook payload/signature', ['exception' => $e]);
-            $this->response->setHttpResponseCode(400);
 
-            return $this->response;
+            return $this->respond(400, 'Invalid webhook payload or signature.');
         }
 
         $stripeSession = $event->data->object;
 
         if (empty($stripeSession->metadata['shopwhizzy_hosted_checkout'])) {
-            $this->response->setHttpResponseCode(200);
-
-            return $this->response;
+            return $this->respond(200, 'Ignored: not a ShopWhizzy Stripe Hosted Checkout session.');
         }
 
         switch ($event->type) {
@@ -80,7 +84,13 @@ class Index implements CsrfAwareActionInterface
                 break;
         }
 
-        $this->response->setHttpResponseCode(200);
+        return $this->respond(200, 'OK');
+    }
+
+    private function respond(int $httpCode, string $body)
+    {
+        $this->response->setHttpResponseCode($httpCode);
+        $this->response->setBody($body);
 
         return $this->response;
     }

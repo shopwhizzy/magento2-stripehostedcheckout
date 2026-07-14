@@ -29,7 +29,7 @@
                 </field>
                 <field id="webhook_secret" translate="label" type="obscure" sortOrder="40" showInDefault="1" showInWebsite="1" showInStore="1">
                     <label>Webhook Signing Secret</label>
-                    <comment>From the Stripe Dashboard webhook endpoint configured to point at .../shopwhizzystripehostedcheckout/webhook/index</comment>
+                    <comment>From the Stripe Dashboard webhook endpoint configured to point at .../stripehostedcheckout/webhooks</comment>
                     <backend_model>Magento\Config\Model\Config\Backend\Encrypted</backend_model>
                 </field>
             </group>

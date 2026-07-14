@@ -83,7 +83,7 @@ If you'd rather create the webhook endpoint yourself (e.g. in the Stripe Dashboa
 point it at:
 
 ```
-https://<your-domain>/shopwhizzystripehostedcheckout/webhook/index
+https://<your-domain>/stripehostedcheckout/webhooks
 ```
 
 subscribed to the same four `checkout.session.*` events listed above.

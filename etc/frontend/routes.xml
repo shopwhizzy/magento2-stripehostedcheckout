@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:framework:App/etc/routes.xsd">
     <router id="standard">
-        <route id="shopwhizzystripehostedcheckout" frontName="shopwhizzystripehostedcheckout">
+        <route id="stripehostedcheckout" frontName="stripehostedcheckout">
             <module name="ShopWhizzy_StripeHostedCheckout"/>
         </route>
     </router>

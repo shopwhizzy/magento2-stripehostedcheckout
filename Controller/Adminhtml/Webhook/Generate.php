@@ -21,7 +21,7 @@ class Generate extends Action implements HttpPostActionInterface
 {
     public const ADMIN_RESOURCE = 'ShopWhizzy_StripeHostedCheckout::config';
 
-    private const WEBHOOK_PATH = 'shopwhizzystripehostedcheckout/webhook/index';
+    private const WEBHOOK_PATH = 'stripehostedcheckout/webhooks';
     private const WEBHOOK_EVENTS = [
         'checkout.session.completed',
         'checkout.session.expired',

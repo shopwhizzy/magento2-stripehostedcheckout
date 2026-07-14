@@ -42,9 +42,9 @@ class CheckoutSessionBuilder
             'phone_number_collection' => [
                 'enabled' => true,
             ],
-            'success_url' => $this->urlBuilder->getUrl('shopwhizzystripehostedcheckout/redirect/success')
+            'success_url' => $this->urlBuilder->getUrl('stripehostedcheckout/redirect/success')
                 . '?session_id={CHECKOUT_SESSION_ID}',
-            'cancel_url' => $this->urlBuilder->getUrl('shopwhizzystripehostedcheckout/redirect/cancel')
+            'cancel_url' => $this->urlBuilder->getUrl('stripehostedcheckout/redirect/cancel')
                 . '?session_id={CHECKOUT_SESSION_ID}',
             'metadata' => [
                 'magento_quote_id' => (string) $quote->getId(),
