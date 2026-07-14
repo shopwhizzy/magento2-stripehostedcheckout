@@ -55,23 +55,22 @@ the same `setup:upgrade` / `setup:di:compile` / `cache:flush` steps.
 
 ## Setup
 
-Go to **Stores > Configuration > Sales > Stripe Hosted Checkout**:
+Go to **Stores > Configuration > ShopWhizzy > Stripe Hosted Checkout**:
 
 1. **Stripe Secret Key** / **Stripe Publishable Key** — from your Stripe Dashboard.
    This module keeps its own copy of these keys rather than reusing
    `stripe/module-payments`'s configuration, since that module's internals are not a
    public extension point.
-2. **Webhook Signing Secret** — create a webhook endpoint in the Stripe Dashboard (or
-   via the API) pointing at:
-
-   ```
-   https://<your-domain>/shopwhizzystripehostedcheckout/webhook/index
-   ```
-
-   subscribed to `checkout.session.completed` and `checkout.session.expired`. Paste
-   the endpoint's signing secret (`whsec_...`) into this field. This is a **separate**
-   endpoint from `stripe/module-payments`'s own `/stripe/webhooks`, so processing
-   never interferes with that module's event handling.
+2. **Generate Webhook** — click this after pasting your Secret Key (works even before
+   clicking "Save Config" — it reads the key straight out of the form). It creates a
+   webhook endpoint in Stripe pointed at this module's handler, subscribed to
+   `checkout.session.completed`, `checkout.session.expired`,
+   `checkout.session.async_payment_succeeded`, and
+   `checkout.session.async_payment_failed`, and fills in the **Webhook Signing
+   Secret** field below with the result. Click "Save Config" afterward to persist it.
+   Re-clicking replaces the previous endpoint rather than creating duplicates. This is
+   a **separate** endpoint from `stripe/module-payments`'s own `/stripe/webhooks`, so
+   processing never interferes with that module's event handling.
 3. **Enable Stripe Hosted Checkout Redirect** — set to Yes to activate the redirect.
    This toggle is independent of `stripe/module-payments`'s own "Payment Flow"
    setting — that setting only changes payment behavior *within* Magento's native
@@ -79,6 +78,15 @@ Go to **Stores > Configuration > Sales > Stripe Hosted Checkout**:
 
 With the toggle off, the store behaves exactly as stock Magento — nothing is
 patched or overridden, only a plugin that no-ops.
+
+If you'd rather create the webhook endpoint yourself (e.g. in the Stripe Dashboard),
+point it at:
+
+```
+https://<your-domain>/shopwhizzystripehostedcheckout/webhook/index
+```
+
+subscribed to the same four `checkout.session.*` events listed above.
 
 ## How shipping is handled
 
@@ -102,14 +110,38 @@ is passed to Stripe as a one-off, single-use Stripe Coupon applied to the sessio
 Stripe's own native promo-code entry box is not shown, to avoid running two separate
 coupon systems.
 
+## Delayed / asynchronous payment methods (Multibanco, MB WAY, OXXO, bank transfers...)
+
+Some payment methods don't complete at checkout — the customer gets a voucher or
+reference and pays later (Multibanco can take hours or days). For these, Stripe marks
+the Checkout Session `status` as `complete` (checkout itself is done) while
+`payment_status` stays `unpaid` until the money actually arrives, which can happen
+long after the browser has left the site.
+
+The module handles this by placing the order immediately in Magento's normal `new` /
+`pending` state (not invoiced) as soon as checkout completes, then invoicing it and
+moving it to `processing` only when `checkout.session.async_payment_succeeded` fires —
+or cancelling it if `checkout.session.async_payment_failed` fires instead (voucher
+expired / payment failed). **Do not ship orders still in `pending` state** — they
+haven't been paid yet. This logic mirrors `stripe/module-payments`'s own return
+controller, which gates on session `status` rather than `payment_status` for exactly
+this reason.
+
 ## Caveats / known limitations (v1.0.0)
 
-- **Region-required countries without a Stripe state field.** Magento can require a
-  region/state for a country (`general/region/state_required`) even though Stripe's
-  hosted page doesn't collect a state field for every country (confirmed for
-  Portugal). When this happens, the module assigns a placeholder region so the order
-  can still be placed, and discloses this on the order via a status history comment.
-  These orders should have their address verified with the customer before shipping.
+- **Region-required countries without a Stripe state field.** Stripe's hosted page
+  only shows a state/region input for a handful of countries where that's part of
+  standard postal addressing (US, CA, AU, IT, MX, JP, CN, IN, ID, ...) — this follows
+  real-world address formats and isn't something the Checkout Session API can
+  override per country. A one-time install patch
+  (`Setup/Patch/Data/SetStripeCompatibleRegionRequiredCountries`) trims Magento's
+  `general/region/state_required` down to that same set, since Magento's much broader
+  default list (~39 countries) would otherwise force a guess for every order from a
+  country Stripe doesn't collect a state for (confirmed live for Portugal). If a
+  country outside that trimmed set still ends up requiring a region in your store's
+  config, the module falls back to a placeholder region so the order can still be
+  placed, and discloses this on the order via a status history comment — those orders
+  should have their address verified with the customer before shipping.
 - **Shipping total on the fallback path.** When the fallback shipping options were
   used (no address known at redirect time) and the real address the customer enters
   on Stripe turns out to need a different table rate, the order's shipping amount is
